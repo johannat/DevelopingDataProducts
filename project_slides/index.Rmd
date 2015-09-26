@@ -1,0 +1,123 @@
+---
+title       : Illustrating the extent of Arctic sea-ice
+subtitle    : data from late 1978 to early 2013
+author      : Developing Data Products
+job         : Coursera Data Science specialization
+framework   : io2012        # {io2012, html5slides, shower, dzslides, ...}
+highlighter : highlight.js  # {highlight.js, prettify, highlight}
+hitheme     : tomorrow      # 
+widgets     : []            # {mathjax, quiz, bootstrap}
+mode        : selfcontained # {standalone, draft}
+knit        : slidify::knit2slides
+---
+
+<!-- change the greenish title slide to blueish (for ice) -->
+<style>
+.title-slide {
+  background-color: #CCE5FF;
+}
+.title-slide hgroup > h1, 
+.title-slide hgroup > h2 {
+  color: #004C99;
+}
+</style>
+
+## Background
+
+US [National Snow and Ice Data Center](http://nsidc.org/) measures the extent of Arctic sea-ice. [The project app](https://johanna.shinyapps.io/Project) aims to illustrate the diminishing trend in Arctic sea-ice by letting the user explore the measurements available at UsingR package in a dashboard-like fashion.
+
+The application supports three types of graphics that are all demonstrated on the following slides.
+
+1. an annual timeseries as boxplot 
+2. seasonal variation as monthly boxplot
+3. seasonal variations as lines for each year with a selected year highlighted in red
+
+The user can choose the range of years pictured.
+
+[R-bloggers](http://www.r-bloggers.com/arctic-sea-ice-at-lowest-levels-since-observations-began/) inspired the line chart with a highlighted year.
+
+--- 
+
+## Annual time series shows a diminishing trend
+
+```{r echo = FALSE, fig.width = 14}
+library(UsingR)
+library(ggplot2)
+library(scales)
+# read data and format dates
+data(nisdc)
+nisdc$year <- factor(nisdc$Year)
+# use fixed y limits on all graphics to accentuate changes
+limits <- c(floor(10* min(nisdc$Extent))/10 - 0.1,
+            ceil(10*max(nisdc$Extent))/10 + 0.1)
+p <- ggplot(nisdc, aes(year, Extent)) + geom_boxplot() +
+    xlab("Year") + ggtitle("Arctic sea-ice by year") +
+    ylab("Extent in millions of square kilometers") + ylim(limits) +
+    theme(axis.text.x = element_text(angle = 90))
+print(p)
+```
+
+---- 
+
+## Monthly boxplot illustrates the seasonal variation
+
+```{r echo = FALSE, fig.width = 14}
+# months as Jan ... Dec
+nisdc$mon <- factor(format(strptime(paste(nisdc$Day, nisdc$Month,
+                                          nisdc$Year), "%d %m %Y"),
+                           "%b"), levels = month.abb)
+start <- 1980
+end <- 1999
+dataset <- nisdc[nisdc$Year >= start & nisdc$Year <= end, ]
+p <- ggplot(dataset, aes(mon, Extent)) + geom_boxplot() + xlab("Month") +
+    ggtitle(paste0("Seasonal variation in ", start, "-", end)) +
+    ylab("Extent in millions of square kilometers") + ylim(limits)
+print(p)
+```
+
+--- &twocol
+
+## Line chart with a highlighted year combines the two
+
+*** =left
+```{r echo = FALSE, warning = FALSE}
+nisdc$year <- factor(nisdc$Year)
+# dates as 01-Jan ... 31-Dec
+nisdc$date <- as.Date(paste(nisdc$Day, nisdc$Month), "%d %m")
+start <- 1979
+end <- 1988
+dataset <- nisdc[nisdc$Year >= start & nisdc$Year <= end, ]
+highlight <- 2012
+selected <- nisdc[nisdc$Year == highlight, ]
+p <- ggplot(dataset, aes(date, Extent, group = year)) + geom_line() +
+    geom_line(data = selected, colour = "red", size = 2) +
+    scale_x_date(labels = date_format("%d-%b")) + xlab("") + 
+    ggtitle(paste0("Seasonal variation in ", start, "-", end, " with ", 
+                   highlight, " highlighted in red")) +
+    ylab("Extent in millions of square kilometers") + ylim(limits)
+print(p)
+```
+
+*** =right
+
+```{r echo = FALSE, warning = FALSE}
+nisdc$year <- factor(nisdc$Year)
+# dates as 01-Jan ... 31-Dec
+nisdc$date <- as.Date(paste(nisdc$Day, nisdc$Month), "%d %m")
+start <- 2003
+end <- 2012
+dataset <- nisdc[nisdc$Year >= start & nisdc$Year <= end, ]
+highlight <- 1979
+selected <- nisdc[nisdc$Year == highlight, ]
+p <- ggplot(dataset, aes(date, Extent, group = year)) + geom_line() +
+    geom_line(data = selected, colour = "red", size = 2) +
+    scale_x_date(labels = date_format("%d-%b")) + xlab("") + 
+    ggtitle(paste0("Seasonal variation in ", start, "-", end, " with ", 
+                   highlight, " highlighted in red")) +
+    ylab("Extent in millions of square kilometers") + ylim(limits)
+print(p)
+```
+
+*** =fullwidth
+
+Credits for the two-column layout go to [Zev Ross](http://zevross.com/blog/2014/11/19/creating-elegant-html-presentations-that-feature-r-code/).
